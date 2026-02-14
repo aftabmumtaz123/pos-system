@@ -36,6 +36,10 @@ app.use(session({
     }
 }));
 
+app.listen(3001, () =>{
+  console.log('Server is running on port 3001');  
+})
+
 // Make query params and settings available in all templates
 app.use(async (req, res, next) => {
     res.locals.query = req.query;
