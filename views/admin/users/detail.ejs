@@ -1,0 +1,439 @@
+<% 
+  const title = `User Detail: ${targetUser.username} - POS System`;
+  const initials = targetUser.username.slice(0, 2).toUpperCase();
+  const avatarColors = ['bg-blue-500', 'bg-purple-500', 'bg-amber-500', 'bg-rose-500'];
+  const colorClass = avatarColors[targetUser.username.length % 4];
+  const isSelf = targetUser._id.toString() === user._id.toString();
+%>
+<%- include('../../layouts/header', { user, currentPage: 'users', title, needsCharts: true }) %>
+
+<div class="max-w-7xl mx-auto">
+    <!-- Back Navigation -->
+    <div class="mb-6">
+        <a href="/users" class="inline-flex items-center text-gray-500 hover:text-indigo-600 font-bold transition-colors">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Users
+        </a>
+    </div>
+
+    <!-- User Header Section -->
+    <div class="card mb-8 p-6 bg-white border border-gray-100 shadow-xl rounded-2xl">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div class="flex items-center gap-6">
+                <!-- Avatar Circle -->
+                <div class="w-24 h-24 rounded-3xl <%= colorClass %> text-white flex items-center justify-center text-3xl font-black shadow-lg shadow-indigo-100">
+                    <%= initials %>
+                </div>
+                
+                <div>
+                    <div class="flex items-center gap-3 mb-1">
+                        <h1 class="text-3xl font-black text-gray-900 tracking-tight"><%= targetUser.username %></h1>
+                        <% if (isSelf) { %>
+                            <span class="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">You</span>
+                        <% } %>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Role Badge -->
+                        <% if (targetUser.role === 'super_admin') { %>
+                            <span class="px-3 py-1 rounded-lg bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest border border-red-100">
+                                <i class="fas fa-shield-alt mr-1"></i> Super Admin
+                            </span>
+                        <% } else { %>
+                            <span class="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                                <i class="fas fa-user mr-1"></i> Cashier
+                            </span>
+                        <% } %>
+                        
+                        <!-- Status Indicator -->
+                        <% if (targetUser.isActive !== false) { %>
+                            <span class="flex items-center text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                                Active
+                            </span>
+                        <% } else { %>
+                            <span class="flex items-center text-[10px] font-black text-red-600 uppercase tracking-widest">
+                                <span class="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                                Inactive
+                            </span>
+                        <% } %>
+                        
+                        <span class="text-xs font-bold text-gray-400">
+                            ID: <span class="text-gray-600">#<%= targetUser._id.toString().slice(-6).toUpperCase() %></span>
+                        </span>
+                        
+                        <span class="text-xs font-bold text-gray-400">
+                            Joined: <span class="text-gray-600"><%= new Date(targetUser.createdAt).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }) %></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex flex-wrap gap-2 w-full lg:w-auto">
+                <button onclick="openEditModal('<%= targetUser._id %>', '<%= targetUser.username %>', '<%= targetUser.email %>', '<%= targetUser.role %>')" class="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-700 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                    <i class="fas fa-pencil-alt"></i> Edit Profile
+                </button>
+
+                <button onclick="openEditModal('<%= targetUser._id %>', '<%= targetUser.username %>', '<%= targetUser.email %>', '<%= targetUser.role %>')" class="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-xs font-black text-gray-700 hover:bg-slate-800 hover:text-white transition-all shadow-sm">
+                    <i class="fas fa-lock"></i> Reset Password
+                </button>
+                
+                <a href="/users/toggle-status/<%= targetUser._id %>" class="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 <%= targetUser.isActive !== false ? 'bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-600 hover:text-white' : 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white' %> border rounded-xl text-xs font-black transition-all shadow-sm">
+                    <i class="fas <%= targetUser.isActive !== false ? 'fa-toggle-on' : 'fa-toggle-off' %>"></i>
+                    <%= targetUser.isActive !== false ? 'Deactivate' : 'Activate' %>
+                </a>
+
+                <% if (!isSelf) { %>
+                    <a href="/users/delete/<%= targetUser._id %>" onclick="return confirm('Permanently remove this team member?')" class="flex-1 lg:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 border border-rose-100 rounded-xl text-xs font-black text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                        <i class="fas fa-trash"></i> Delete User
+                    </a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content - Tabs -->
+    <div class="mb-8" x-data="{ activeTab: 'profile' }">
+        <!-- Tab Headers -->
+        <div class="flex border-b border-gray-200 gap-8 mb-8 overflow-x-auto no-scrollbar">
+            <button @click="activeTab = 'profile'" :class="activeTab === 'profile' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-400 hover:text-gray-600'" class="pb-4 border-b-2 font-black text-xs uppercase tracking-widest transition-all">
+                <i class="fas fa-id-card mr-2"></i> Profile & Access
+            </button>
+            <button @click="activeTab = 'sales'" :class="activeTab === 'sales' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-400 hover:text-gray-600'" class="pb-4 border-b-2 font-black text-xs uppercase tracking-widest transition-all">
+                <i class="fas fa-chart-pie mr-2"></i> Sales Performance
+            </button>
+            <button @click="activeTab = 'history'" :class="activeTab === 'history' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-400 hover:text-gray-600'" class="pb-4 border-b-2 font-black text-xs uppercase tracking-widest transition-all">
+                <i class="fas fa-receipt mr-2"></i> Recent Sales
+            </button>
+        </div>
+
+        <!-- Tab Content: Profile -->
+        <div x-show="activeTab === 'profile'" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <h3 class="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mr-3"><i class="fas fa-info-circle"></i></span>
+                        Account Information
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-50">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Email Address</span>
+                            <span class="text-sm font-black text-gray-700"><%= targetUser.email %></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-50">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Phone Number</span>
+                            <span class="text-sm font-black text-gray-700"><%= targetUser.phone || 'Not Provided' %></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-50">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Account Status</span>
+                            <span class="<%= targetUser.isActive !== false ? 'text-emerald-600' : 'text-rose-600' %> text-sm font-black"><%= targetUser.isActive !== false ? 'Active' : 'Inactive' %></span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Assigned Role</span>
+                            <span class="text-sm font-black text-indigo-600"><%= targetUser.role === 'super_admin' ? 'Super Admin' : 'Cashier' %></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <h3 class="text-sm font-black text-gray-900 mb-6 uppercase tracking-widest flex items-center">
+                        <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mr-3"><i class="fas fa-history"></i></span>
+                        Access Activity
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-gray-50">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Last Login</span>
+                            <span class="text-sm font-black text-gray-700">
+                                <%= targetUser.lastLogin ? new Date(targetUser.lastLogin).toLocaleString('en-PK', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Never logged in' %>
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-gray-50">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Total Logins</span>
+                            <span class="text-sm font-black text-gray-700"><%= targetUser.loginCount || 0 %> sessions</span>
+                        </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-tighter">Member Since</span>
+                            <span class="text-sm font-black text-gray-700"><%= new Date(targetUser.createdAt).toLocaleDateString('en-PK', { day: '2-digit', month: 'long', year: 'numeric' }) %></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Sales Performance -->
+        <div x-show="activeTab === 'sales'" class="space-y-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4"><i class="fas fa-pkr-sign"></i></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Sales</p>
+                    <p class="text-2xl font-black text-gray-900">PKR <%= stats.totalSales.toLocaleString() %></p>
+                </div>
+                <div class="card p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4"><i class="fas fa-receipt"></i></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Transactions</p>
+                    <p class="text-2xl font-black text-gray-900"><%= stats.transactionCount %></p>
+                </div>
+                <div class="card p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4"><i class="fas fa-chart-line"></i></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Avg. Sale</p>
+                    <p class="text-2xl font-black text-gray-900">PKR <%= Math.round(stats.averageSaleValue).toLocaleString() %></p>
+                </div>
+                <div class="card p-5 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4"><i class="fas fa-tag"></i></div>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Discounts Given</p>
+                    <p class="text-2xl font-black text-gray-900">PKR <%= stats.totalDiscounts.toLocaleString() %></p>
+                </div>
+            </div>
+
+            <!-- More Stats & Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main Chart -->
+                <div class="card lg:col-span-2 p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-sm font-black text-gray-900 uppercase tracking-widest">Sales Trend (Last 30 Days)</h3>
+                        <span class="px-2.5 py-1 bg-gray-50 text-gray-500 rounded-lg text-[10px] font-black">Daily Volume</span>
+                    </div>
+                    <div class="h-[300px]">
+                        <canvas id="userSalesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Insights Column -->
+                <div class="space-y-4">
+                    <div class="card p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                        <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-4">Top Performance</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Favorite Payment Method</p>
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center text-indigo-600 border border-gray-100">
+                                        <% if(topPaymentMethod === 'cash') { %><i class="fas fa-money-bill-wave text-xl"></i><% } %>
+                                        <% if(topPaymentMethod === 'card') { %><i class="fas fa-credit-card text-xl"></i><% } %>
+                                        <% if(topPaymentMethod === 'easypaisa') { %><i class="fas fa-mobile-alt text-xl"></i><% } %>
+                                        <% if(topPaymentMethod === 'jazzcash') { %><i class="fas fa-wallet text-xl"></i><% } %>
+                                        <% if(topPaymentMethod === 'N/A') { %><i class="fas fa-minus text-xl"></i><% } %>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-black text-gray-900 uppercase"><%= topPaymentMethod %></p>
+                                        <p class="text-[10px] font-bold text-gray-400">Most Used</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-6 border-t border-gray-50">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Top Selling Product</p>
+                                <% if (topProduct) { %>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 border border-indigo-100 font-black text-sm">
+                                            <%= topProduct.name.slice(0,1).toUpperCase() %>
+                                        </div>
+                                        <div>
+                                            <p class="text-sm font-black text-gray-900 truncate max-w-[150px]"><%= topProduct.name %></p>
+                                            <p class="text-[10px] font-bold text-gray-400"><%= topProduct.totalQty %> Units sold</p>
+                                        </div>
+                                    </div>
+                                <% } else { %>
+                                    <p class="text-sm font-bold text-gray-400">No products sold yet</p>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Recent Sales -->
+        <div x-show="activeTab === 'history'" class="space-y-6">
+            <div class="card overflow-hidden p-0 border border-gray-100 shadow-sm rounded-2xl bg-white">
+                <% if (recentSales.length > 0) { %>
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-100">
+                                <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Receipt #</th>
+                                <th class="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Items</th>
+                                <th class="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Total</th>
+                                <th class="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment</th>
+                                <th class="px-6 py-4 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-50">
+                            <% recentSales.forEach(sale => { %>
+                                <tr class="hover:bg-gray-50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <span class="text-xs font-black text-gray-900 tracking-tighter">#<%= sale._id.toString().slice(-6).toUpperCase() %></span>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <p class="text-xs font-bold text-gray-600">
+                                            <%= sale.items.length %> <%= sale.items.length === 1 ? 'Item' : 'Items' %>
+                                            <% if (sale.items.length > 0) { %>
+                                                <span class="text-[10px] text-gray-400 ml-1">(<%= sale.items[0].productName %><%= sale.items.length > 1 ? '...' : '' %>)</span>
+                                            <% } %>
+                                        </p>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <p class="text-xs font-black text-gray-900">PKR <%= sale.total.toLocaleString() %></p>
+                                        <% if (sale.discountAmount > 0) { %>
+                                            <span class="text-[10px] font-bold text-rose-500">-PKR <%= sale.discountAmount.toLocaleString() %></span>
+                                        <% } %>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-2 py-0.5 rounded-lg bg-gray-50 text-[10px] font-black text-gray-600 uppercase border border-gray-100">
+                                            <%= sale.paymentMethod %>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <p class="text-xs font-bold text-gray-500"><%= new Date(sale.createdAt).toLocaleDateString() %></p>
+                                        <p class="text-[10px] font-bold text-gray-400"><%= new Date(sale.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></p>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                <% } else { %>
+                    <div class="py-12 text-center">
+                        <i class="fas fa-receipt text-gray-200 text-5xl mb-4"></i>
+                        <p class="text-gray-400 font-bold">This user hasn't made any sales yet.</p>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Logic (Keep it here or and in users.ejs) -->
+<div id="editUserModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="modalContainer">
+    <div class="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+      <h3 class="text-xl font-black text-gray-900 tracking-tight">Edit Team Member</h3>
+      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="editUserForm" method="POST" action="" class="p-6 space-y-5">
+      <div>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Username</label>
+        <input type="text" name="username" id="editUsername" required class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50">
+      </div>
+      <div>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label>
+        <input type="email" name="email" id="editEmail" required class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50">
+      </div>
+      <div>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Privilege Role</label>
+        <select name="role" id="editRole" class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50 cursor-pointer">
+          <option value="super_admin">Super Admin</option>
+          <option value="cashier">Cashier</option>
+        </select>
+      </div>
+      <div class="pt-2">
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">New Password (Optional)</label>
+        <input type="password" name="password" placeholder="Leave blank to keep current" class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50">
+      </div>
+      <div class="flex gap-3 pt-4">
+        <button type="button" onclick="closeEditModal()" class="flex-1 px-6 py-4 rounded-2xl bg-gray-50 text-gray-600 font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all">Cancel</button>
+        <button type="submit" class="flex-1 px-6 py-4 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+<script>
+    // Sales Chart Logic
+    const salesData = <%- dailySales %>;
+    const ctx = document.getElementById('userSalesChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: salesData.map(d => new Date(d._id).toLocaleDateString('en-PK', { day: '2-digit', month: 'short' })),
+            datasets: [{
+                label: 'Total Sales (PKR)',
+                data: salesData.map(d => d.total),
+                borderColor: '#4f46e5',
+                backgroundColor: 'rgba(79, 70, 229, 0.05)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#4f46e5',
+                pointBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1E293B',
+                    titleFont: { size: 10, weight: 'bold' },
+                    bodyFont: { size: 12, weight: 'black' },
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        label: (context) => `PKR ${context.parsed.y.toLocaleString()}`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0,0,0,0.03)', drawBorder: false },
+                    ticks: {
+                        font: { size: 10, weight: 'bold' },
+                        color: '#94a3b8',
+                        callback: (val) => val >= 1000 ? (val/1000) + 'k' : val
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 10, weight: 'bold' },
+                        color: '#94a3b8'
+                    }
+                }
+            }
+        }
+    });
+
+    // Modal Logic
+    function openEditModal(id, username, email, role) {
+        const modal = document.getElementById('editUserModal');
+        const container = document.getElementById('modalContainer');
+        const form = document.getElementById('editUserForm');
+        
+        document.getElementById('editUsername').value = username;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editRole').value = role;
+        form.action = `/users/edit/${id}`;
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            container.classList.remove('scale-95', 'opacity-0');
+            container.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('editUserModal');
+        const container = document.getElementById('modalContainer');
+        
+        container.classList.remove('scale-100', 'opacity-100');
+        container.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    // Close modal on backdrop click
+    document.getElementById('editUserModal').addEventListener('click', function(e) {
+        if (e.target === this) closeEditModal();
+    });
+</script>
+
+<%- include('../../layouts/footer') %>

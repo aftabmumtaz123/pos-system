@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - <%= settings.businessName || 'POS System' %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: <%= settings.primaryColor || '#4f46e5' %>;
+    }
+    .btn-primary { background-color: var(--primary-color) !important; }
+    <% if (settings.loginBackground) { %>
+      body {
+        background-image: url('<%= settings.loginBackground %>');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+      }
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.4);
+        z-index: -1;
+      }
+    <% } %>
+  </style>
+</head>
+<body class="bg-gray-100">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-xl shadow-lg overflow-hidden">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-8 text-center" style="background: linear-gradient(135deg, var(--primary-color), #4338ca)">
+        <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mx-auto mb-4 overflow-hidden p-2">
+          <% if (settings.logo && settings.logo !== '/uploads/default-logo.png') { %>
+            <img src="<%= settings.logo %>" class="w-full h-full object-contain">
+          <% } else { %>
+            <i class="fas fa-cash-register text-white text-3xl"></i>
+          <% } %>
+        </div>
+        <h1 class="text-2xl font-bold text-white"><%= settings.businessName || 'POS System' %></h1>
+        <p class="text-indigo-100 mt-2"><%= settings.tagline || 'Sign in to your account' %></p>
+      </div>
+
+      <!-- Login Form -->
+      <div class="p-8">
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="mb-4 p-3 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm">
+            <i class="fas fa-exclamation-circle mr-2"></i><%= error %>
+          </div>
+        <% } %>
+
+        <form action="/login" method="POST">
+          <div class="form-group mb-4">
+            <label class="form-label">Username or Email</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                name="username" 
+                class="form-control pl-10" 
+                placeholder="Enter username"
+                required
+              >
+              <i class="fas fa-user absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+          </div>
+
+          <div class="form-group mb-6">
+            <label class="form-label">Password</label>
+            <div class="relative">
+              <input 
+                type="password" 
+                name="password" 
+                class="form-control pl-10" 
+                placeholder="Enter password"
+                required
+              >
+              <i class="fas fa-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full btn btn-primary py-3">
+            <i class="fas fa-sign-in-alt mr-2"></i>
+            Login
+          </button>
+        </form>
+
+        <div class="mt-6 text-center">
+          <p class="text-xs text-gray-500">
+            Default Admin: admin / admin123
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <script src="/js/toast.js"></script>
+  
+  <% if (typeof query !== 'undefined' && query.success) { %>
+    <script>Toast.success('<%= query.success %>');</script>
+  <% } %>
+</body>
+</html>

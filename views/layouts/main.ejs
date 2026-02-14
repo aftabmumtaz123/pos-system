@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'POS System' %></title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Toastify CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/styles.css">
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-50">
+  
+  <!-- Top Navbar -->
+  <nav class="bg-white shadow-md fixed top-0 left-0 right-0 z-50">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16">
+        <!-- Logo & Menu Toggle -->
+        <div class="flex items-center gap-4">
+          <button id="sidebarToggle" class="lg:hidden text-gray-600 hover:text-gray-900">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+          <div class="flex items-center gap-2">
+            <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <i class="fas fa-cash-register text-white text-lg"></i>
+            </div>
+            <span class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+              POS System
+            </span>
+          </div>
+        </div>
+
+        <!-- User Info -->
+        <div class="flex items-center gap-4">
+          <div class="text-right hidden sm:block">
+            <p class="text-sm font-semibold text-gray-900"><%= user.username %></p>
+            <p class="text-xs text-gray-500">
+              <%= user.role === 'super_admin' ? 'Super Admin' : 'Cashier' %>
+            </p>
+          </div>
+          <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-user text-indigo-600"></i>
+          </div>
+          <a href="/logout" class="btn btn-secondary text-sm">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="hidden sm:inline">Logout</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed left-0 top-16 bottom-0 w-64 bg-white shadow-lg transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40">
+    <div class="p-4 h-full overflow-y-auto">
+      <nav class="space-y-2">
+        <% if (user.role === 'super_admin') { %>
+          <a href="/admin/dashboard" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'dashboard' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-chart-line text-lg"></i>
+            <span class="font-medium">Dashboard</span>
+          </a>
+          
+          <a href="/products" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'products' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-box text-lg"></i>
+            <span class="font-medium">Products</span>
+          </a>
+          
+          <a href="/discounts" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'discounts' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-tags text-lg"></i>
+            <span class="font-medium">Discounts</span>
+          </a>
+          
+          <a href="/users" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'users' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-users text-lg"></i>
+            <span class="font-medium">Users</span>
+          </a>
+          
+          <a href="/admin/reports" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'reports' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-file-alt text-lg"></i>
+            <span class="font-medium">Reports</span>
+          </a>
+        <% } else { %>
+          <a href="/pos" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'pos' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-cash-register text-lg"></i>
+            <span class="font-medium">POS</span>
+          </a>
+          
+          <a href="/pos/my-sales" class="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors <%= typeof currentPage !== 'undefined' && currentPage === 'my-sales' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700' %>">
+            <i class="fas fa-receipt text-lg"></i>
+            <span class="font-medium">My Sales</span>
+          </a>
+        <% } %>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Sidebar Overlay (Mobile) -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+
+  <!-- Main Content -->
+  <main class="lg:ml-64 mt-16 p-4 sm:p-6 lg:p-8 min-h-screen">
+    <%- body %>
+  </main>
+
+  <!-- Toastify JS -->
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- Toast Helper -->
+  <script src="/js/toast.js"></script>
+
+  <!-- Sidebar Toggle Script -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    sidebarToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+
+    sidebarOverlay?.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      sidebarOverlay.classList.add('hidden');
+    });
+  </script>
+
+  <!-- Show toasts from query params -->
+  <% if (typeof query !== 'undefined') { %>
+    <% if (query.success) { %>
+      <div data-success-message="<%= query.success %>"></div>
+    <% } %>
+    <% if (query.error) { %>
+      <div data-error-message="<%= query.error %>"></div>
+    <% } %>
+    <% if (query.warning) { %>
+      <div data-warning-message="<%= query.warning %>"></div>
+    <% } %>
+    <% if (query.info) { %>
+      <div data-info-message="<%= query.info %>"></div>
+    <% } %>
+  <% } %>
+</body>
+</html>

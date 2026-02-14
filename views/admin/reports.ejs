@@ -1,0 +1,548 @@
+<% 
+  const currentPage = 'reports';
+  const title = 'Insights - POS System';
+  const needsCharts = true;
+
+  // Helper for trend display
+  function renderTrend(value, label) {
+    const isUp = value > 0;
+    const colorClass = isUp ? 'text-green-500' : 'text-red-500';
+    const iconClass = isUp ? 'fa-arrow-up' : 'fa-arrow-down';
+    if (value === 0) return `<span class="text-white opacity-60 text-[10px] font-bold">No change vs prev</span>`;
+    return `
+      <div class="flex items-center gap-1">
+        <span class="px-1.5 py-0.5 rounded bg-white/20 ${colorClass} text-[10px] font-black">
+          <i class="fas ${iconClass} mr-0.5"></i>${Math.abs(value).toFixed(1)}%
+        </span>
+        <span class="text-white opacity-60 text-[10px] font-medium italic">${label}</span>
+      </div>
+    `;
+  }
+%>
+<%- include('../layouts/header', { user, currentPage, title, needsCharts }) %>
+
+<style>
+  @media print {
+    #sidebar, nav, #reportFilterForm, .btn, i.fa-info-circle {
+      display: none !important;
+    }
+    main {
+      margin-left: 0 !important;
+      padding: 0 !important;
+      margin-top: 0 !important;
+    }
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #eee !important;
+      break-inside: avoid;
+    }
+    .grid {
+      display: block !important;
+    }
+    .grid > div {
+      margin-bottom: 2rem !important;
+      width: 100% !important;
+    }
+    body {
+      background: white !important;
+      color: black !important;
+    }
+    .text-white {
+      color: #1f2937 !important;
+    }
+    .bg-white\/20 {
+      background-color: rgba(0,0,0,0.05) !important;
+    }
+    .report-card-green, .report-card-blue, .report-card-purple {
+      background: #f9fafb !important;
+      border: 1px solid #e5e7eb !important;
+    }
+    canvas {
+      max-width: 100% !important;
+      height: auto !important;
+    }
+  }
+</style>
+
+<!-- Header and Export Buttons -->
+<div class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+  <div>
+    <h1 class="text-3xl font-black text-gray-900 tracking-tight">Analytics & Reports</h1>
+    <p class="text-gray-500 font-medium mt-1">Deep dive into your business performance.</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <button onclick="window.print()" class="btn bg-white border border-gray-100 text-gray-600 hover:bg-gray-50 px-5 py-3 rounded-xl transition-all shadow-sm">
+      <i class="fas fa-file-pdf mr-2"></i> Export PDF
+    </button>
+    <button onclick="exportCSV()" class="btn bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 px-6 py-3 rounded-xl transition-all">
+      <i class="fas fa-file-csv mr-2"></i> Download CSV
+    </button>
+  </div>
+</div>
+
+<!-- Date Controls -->
+<div class="card mb-8 p-6 bg-white border border-gray-100 shadow-sm rounded-2xl">
+  <form method="GET" action="/admin/reports" id="reportFilterForm" class="space-y-6">
+    <!-- Presets -->
+    <div class="flex flex-wrap items-center gap-2">
+      <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Quick Presets:</span>
+      <% 
+        const presets = [
+          { id: 'today', label: 'Today' },
+          { id: 'yesterday', label: 'Yesterday' },
+          { id: 'this-week', label: 'This Week' },
+          { id: 'last-30-days', label: 'Last 30 Days' },
+          { id: 'this-month', label: 'This Month' }
+        ];
+        presets.forEach(p => { 
+      %>
+        <a href="/admin/reports?preset=<%= p.id %>" class="preset-chip <%= preset === p.id ? 'preset-chip-active' : 'preset-chip-inactive' %>">
+          <%= p.label %>
+        </a>
+      <% }) %>
+    </div>
+
+    <div class="h-px bg-gray-50"></div>
+
+    <!-- Custom Search -->
+    <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex-1">
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Start Date</label>
+        <div class="relative">
+          <i class="fas fa-calendar absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          <input type="date" name="startDate" value="<%= startDate %>" class="form-control pl-12 py-3 border-gray-100 focus:ring-4 focus:ring-indigo-50">
+        </div>
+      </div>
+      <div class="flex-1">
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">End Date</label>
+        <div class="relative">
+          <i class="fas fa-calendar absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+          <input type="date" name="endDate" value="<%= endDate %>" class="form-control pl-12 py-3 border-gray-100 focus:ring-4 focus:ring-indigo-50">
+        </div>
+      </div>
+      <div class="flex items-end">
+        <button type="submit" class="w-full md:w-auto px-10 py-3 bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100">
+          Apply Filter
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Comparison KPI Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+  <div class="card report-card-green p-6 text-white shadow-xl shadow-emerald-100">
+    <div class="flex justify-between items-start mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-xl">
+        <i class="fas fa-wallet"></i>
+      </div>
+      <%- renderTrend(stats.totalChange, 'vs prev period') %>
+    </div>
+    <h3 class="text-3xl font-black tracking-tighter mb-1">PKR <%= stats.currentTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) %></h3>
+    <p class="text-emerald-50 text-[11px] font-bold uppercase tracking-widest opacity-80">Total Revenue Generated</p>
+  </div>
+
+  <div class="card report-card-blue p-6 text-white shadow-xl shadow-blue-100">
+    <div class="flex justify-between items-start mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-xl">
+        <i class="fas fa-receipt"></i>
+      </div>
+      <%- renderTrend(stats.avgChange, 'vs prev period') %>
+    </div>
+    <h3 class="text-3xl font-black tracking-tighter mb-1">PKR <%= stats.currentAvg.toLocaleString(undefined, { minimumFractionDigits: 2 }) %></h3>
+    <p class="text-blue-50 text-[11px] font-bold uppercase tracking-widest opacity-80">Average Basket Size</p>
+  </div>
+
+  <div class="card report-card-purple p-6 text-white shadow-xl shadow-purple-100">
+    <div class="flex justify-between items-start mb-6">
+      <div class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-xl">
+        <i class="fas fa-shopping-bag"></i>
+      </div>
+      <%- renderTrend(stats.countChange, 'vs prev period') %>
+    </div>
+    <h3 class="text-3xl font-black tracking-tighter mb-1"><%= stats.currentCount %></h3>
+    <p class="text-purple-50 text-[11px] font-bold uppercase tracking-widest opacity-80">Completed Transactions</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+  <!-- Chart: Top Products Horizontal -->
+  <div class="card lg:col-span-2 p-8 bg-white border border-gray-100 rounded-3xl">
+    <div class="flex justify-between items-center mb-10">
+      <div>
+        <h2 class="text-xl font-black text-gray-900 tracking-tight">Top Performing Products</h2>
+        <p class="text-gray-400 text-xs font-medium mt-1">Comparison by total revenue contribution.</p>
+      </div>
+      <i class="fas fa-info-circle text-gray-300"></i>
+    </div>
+    
+    <% if (topProducts.length > 0) { %>
+      <div class="h-[400px] relative">
+        <canvas id="productsHorizontalChart"></canvas>
+      </div>
+    <% } else { %>
+      <div class="flex flex-col items-center justify-center py-20 text-center">
+         <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+            <i class="fas fa-box-open text-3xl text-gray-200"></i>
+         </div>
+         <h4 class="text-lg font-black text-gray-900 tracking-tight">Data Unavailable</h4>
+         <p class="text-gray-400 text-sm mt-1">Try a different date range.</p>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Chart: Top Cashiers Donut -->
+  <div class="card p-8 bg-white border border-gray-100 rounded-3xl">
+    <div class="flex justify-between items-center mb-10">
+      <div>
+        <h2 class="text-xl font-black text-gray-900 tracking-tight">Staff Contribution</h2>
+        <p class="text-gray-400 text-xs font-medium mt-1">Sales share per cashier.</p>
+      </div>
+    </div>
+    
+    <% if (cashierStats.length > 0) { %>
+      <div class="h-[300px] mb-8 relative">
+        <canvas id="cashiersDonutChart"></canvas>
+      </div>
+      <div class="space-y-3">
+         <% cashierStats.slice(0, 5).forEach((c, idx) => { 
+           const colors = ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+           const share = ((c.totalSales / stats.currentTotal) * 100).toFixed(1);
+         %>
+           <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                 <div class="w-2 h-2 rounded-full" style="background-color: <%= colors[idx] %>"></div>
+                 <span class="text-xs font-bold text-gray-700"><%= c._id %></span>
+              </div>
+              <span class="text-[10px] font-black text-indigo-600"><%= share %>%</span>
+           </div>
+         <% }) %>
+      </div>
+    <% } else { %>
+      <div class="flex flex-col items-center justify-center py-20 text-center">
+         <i class="fas fa-user-clock text-4xl text-gray-100 mb-6"></i>
+         <p class="text-gray-400 text-sm font-bold uppercase tracking-widest italic">No sales found</p>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<!-- Detailed Tables Row -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+   <!-- Top Products Breakdown -->
+   <div class="card p-0 overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-sm">
+      <div class="p-6 border-b border-gray-50 bg-gray-50/50">
+         <h3 class="text-base font-black text-gray-900">Product Performance Breakdown</h3>
+      </div>
+      <div class="overflow-x-auto">
+         <table class="w-full">
+            <thead>
+               <tr class="bg-white border-b border-gray-50 text-left">
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Product</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Units</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Trans.</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Revenue</th>
+               </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+               <% topProducts.forEach(p => { %>
+                  <tr class="hover:bg-gray-50/50 transition-colors">
+                     <td class="px-6 py-4">
+                        <span class="text-sm font-black text-gray-900 tracking-tight"><%= p._id %></span>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="text-xs font-bold text-gray-600"><%= p.totalSold %> units</span>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="text-[10px] font-black text-indigo-500 uppercase"><%= p.transCount %> sales</span>
+                     </td>
+                     <td class="px-6 py-4 text-right">
+                        <span class="text-sm font-black text-gray-900 tracking-tighter">PKR <%= p.revenue.toLocaleString() %></span>
+                     </td>
+                  </tr>
+               <% }) %>
+            </tbody>
+         </table>
+      </div>
+   </div>
+
+   <!-- Transaction History (Partial) -->
+   <div class="card p-0 overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-sm">
+      <div class="p-6 border-b border-gray-50 bg-gray-50/50">
+         <h3 class="text-base font-black text-gray-900">Recent Sales Activity</h3>
+      </div>
+      <div class="overflow-x-auto">
+         <table class="w-full">
+            <thead>
+               <tr class="bg-white border-b border-gray-50 text-left">
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Receipt</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cashier</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Method</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Total</th>
+               </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+               <% sales.slice(0, 10).forEach(sale => { %>
+                  <tr class="hover:bg-gray-50/50 transition-colors">
+                     <td class="px-6 py-4">
+                        <span class="text-xs font-mono font-bold text-indigo-500 uppercase tracking-tighter">#<%= sale._id.toString().slice(-8).toUpperCase() %></span>
+                     </td>
+                     <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                           <span class="text-xs font-bold text-gray-800"><%= sale.cashierName %></span>
+                           <span class="text-[9px] text-gray-400"><%= new Date(sale.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+                        </div>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest bg-gray-50 text-gray-500 border border-gray-100">
+                           <%= sale.paymentMethod %>
+                        </span>
+                     </td>
+                     <td class="px-6 py-4 text-right">
+                        <span class="text-sm font-black text-gray-900 tracking-tighter">PKR <%= sale.total.toLocaleString() %></span>
+                     </td>
+                  </tr>
+               <% }) %>
+            </tbody>
+         </table>
+      </div>
+   </div>
+</div>
+
+<!-- Cashier Performance Tables -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+   <!-- Top Cashiers by Sales -->
+   <div class="card p-0 overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-sm">
+      <div class="p-6 border-b border-gray-50 bg-indigo-50/30 flex justify-between items-center">
+         <h3 class="text-base font-black text-gray-900 flex items-center gap-2">
+            <i class="fas fa-crown text-amber-500"></i>
+            Top Cashiers by Sales
+         </h3>
+         <span class="text-[10px] font-black text-indigo-500 uppercase tracking-widest">By Revenue</span>
+      </div>
+      <div class="overflow-x-auto">
+         <table class="w-full">
+            <thead>
+               <tr class="bg-white border-b border-gray-50 text-left">
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cashier</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Avg Ticket</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Revenue</th>
+               </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+               <% cashierStats.forEach((c, idx) => { %>
+                  <tr class="hover:bg-gray-50/50 transition-colors">
+                     <td class="px-6 py-4 flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-[10px] font-black"><%= idx + 1 %></span>
+                        <span class="text-sm font-black text-gray-900 tracking-tight"><%= c._id %></span>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="text-xs font-bold text-gray-500 italic">PKR <%= Math.round(c.avgTicket || 0).toLocaleString() %></span>
+                     </td>
+                     <td class="px-6 py-4 text-right">
+                        <span class="text-sm font-black text-indigo-600 tracking-tighter">PKR <%= c.totalSales.toLocaleString() %></span>
+                     </td>
+                  </tr>
+               <% }) %>
+            </tbody>
+         </table>
+      </div>
+   </div>
+
+   <!-- Top Cashiers by Transactions -->
+   <div class="card p-0 overflow-hidden bg-white border border-gray-100 rounded-3xl shadow-sm">
+      <div class="p-6 border-b border-gray-50 bg-emerald-50/30 flex justify-between items-center">
+         <h3 class="text-base font-black text-gray-900 flex items-center gap-2">
+            <i class="fas fa-bolt text-emerald-500"></i>
+            Top Cashiers by Transactions
+         </h3>
+         <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">By Volume</span>
+      </div>
+      <div class="overflow-x-auto">
+         <table class="w-full">
+            <thead>
+               <tr class="bg-white border-b border-gray-50 text-left">
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cashier</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Share</th>
+                  <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Transactions</th>
+               </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+               <% 
+                  const byCount = [...cashierStats].sort((a,b) => b.count - a.count);
+                  byCount.forEach((c, idx) => { 
+                    const transShare = ((c.count / stats.currentCount) * 100).toFixed(1);
+               %>
+                  <tr class="hover:bg-gray-50/50 transition-colors">
+                     <td class="px-6 py-4 flex items-center gap-3">
+                        <span class="w-6 h-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] font-black"><%= idx + 1 %></span>
+                        <span class="text-sm font-black text-gray-900 tracking-tight"><%= c._id %></span>
+                     </td>
+                     <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black"><%= transShare %>%</span>
+                     </td>
+                     <td class="px-6 py-4 text-right">
+                        <span class="text-sm font-black text-gray-900 tracking-tighter"><%= c.count %> orders</span>
+                     </td>
+                  </tr>
+               <% }) %>
+            </tbody>
+         </table>
+      </div>
+   </div>
+</div>
+
+<!-- Charts Scripts -->
+<script>
+  <% if (topProducts.length > 0) { %>
+    const productsCtx = document.getElementById('productsHorizontalChart').getContext('2d');
+    const prodGradient = productsCtx.createLinearGradient(0, 0, 400, 0);
+    prodGradient.addColorStop(0, '#4f46e5');
+    prodGradient.addColorStop(1, '#818cf8');
+
+    new Chart(productsCtx, {
+      type: 'bar',
+      data: {
+        labels: <%- JSON.stringify(topProducts.map(p => p._id)) %>,
+        datasets: [{
+          label: 'Revenue (PKR)',
+          data: <%- JSON.stringify(topProducts.map(p => p.revenue)) %>,
+          backgroundColor: prodGradient,
+          borderRadius: 12,
+          borderSkipped: false,
+          barThickness: 32
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+             backgroundColor: '#1f2937',
+             titleFont: { family: 'Inter', weight: 'bold', size: 14 },
+             bodyFont: { family: 'Inter', size: 12 },
+             padding: 12,
+             cornerRadius: 8,
+             displayColors: false,
+             callbacks: {
+               label: function(context) {
+                 return 'Revenue: PKR ' + context.parsed.x.toLocaleString();
+               }
+             }
+          }
+        },
+        scales: {
+          x: { 
+             grid: { display: false },
+             ticks: { color: '#9ca3af', font: { weight: 'bold', size: 10 } }
+          },
+          y: { 
+             grid: { display: false },
+             ticks: { color: '#374151', font: { weight: 'bold', size: 11 } }
+          }
+        }
+      }
+    });
+  <% } %>
+
+  <% if (cashierStats.length > 0) { %>
+    const cashiersCtx = document.getElementById('cashiersDonutChart').getContext('2d');
+    new Chart(cashiersCtx, {
+      type: 'doughnut',
+      data: {
+        labels: <%- JSON.stringify(cashierStats.slice(0, 5).map(c => c._id)) %>,
+        datasets: [{
+          data: <%- JSON.stringify(cashierStats.slice(0, 5).map(c => c.totalSales)) %>,
+          backgroundColor: [
+            '#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
+          ],
+          borderWidth: 0,
+          hoverOffset: 15,
+          spacing: 12,
+          borderRadius: 20
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+             backgroundColor: '#1f2937',
+             padding: 12,
+             cornerRadius: 8,
+             callbacks: {
+               label: function(context) {
+                 return context.label + ': PKR ' + context.parsed.toLocaleString();
+               }
+             }
+          }
+        }
+      }
+    });
+  <% } %>
+  function exportCSV() {
+    const rawSales = <%- JSON.stringify(sales) %>;
+    if (!rawSales || rawSales.length === 0) {
+      showToast('No sales data to export', 'warning');
+      return;
+    }
+
+    const headers = ['Receipt #', 'Date', 'Time', 'Cashier', 'Customer', 'Items', 'Total Amount', 'Discount', 'Payment Method'];
+    
+    // Convert to CSV rows with proper escaping
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = [headers.join(',')];
+
+    rawSales.forEach(sale => {
+      const date = new Date(sale.createdAt).toLocaleDateString();
+      const time = new Date(sale.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const items = sale.items.map(i => `${i.productName} (x${i.quantity})`).join('; ');
+      
+      const row = [
+        `#${sale._id.toString().slice(-8).toUpperCase()}`,
+        date,
+        time,
+        sale.cashierName,
+        sale.customerInfo || 'Walk-in',
+        items,
+        sale.total,
+        sale.discountAmount || 0,
+        sale.paymentMethod
+      ];
+      rows.push(row.map(escapeCsv).join(','));
+    });
+
+    const csvString = rows.join('\n');
+    const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    
+    if (navigator.msSaveBlob) { // IE 10+
+      navigator.msSaveBlob(blob, `business_reports_${new Date().toISOString().slice(0,10)}.csv`);
+    } else {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `business_reports_${new Date().toISOString().slice(0,10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+    
+    showToast('Report exported successfully!', 'success');
+  }
+</script>
+
+<%- include('../layouts/footer') %>

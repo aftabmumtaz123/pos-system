@@ -1,0 +1,386 @@
+<% 
+  const currentPage = 'dashboard';
+  const title = 'Dashboard - POS System';
+  const needsCharts = true;
+%>
+<%- include('../layouts/header', { user, currentPage, title, needsCharts }) %>
+
+<!-- Header & Quick Actions -->
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+  <div>
+    <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Dashboard</h1>
+    <p class="text-gray-500 mt-1 font-medium">Insights and overview of your business.</p>
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <a href="/pos" class="btn bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200">
+      <i class="fas fa-plus mr-2"></i> New Sale
+    </a>
+    <a href="/products/add" class="btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm">
+      <i class="fas fa-box mr-2"></i> Add Product
+    </a>
+    <a href="/admin/reports" class="btn bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm">
+      <i class="fas fa-file-alt mr-2"></i> View Reports
+    </a>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+  <!-- Today's Sales -->
+  <div class="card p-6 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Today's Sales</p>
+        <h3 class="text-2xl font-black text-gray-900 mt-2">PKR <%= todayTotal.toLocaleString() %></h3>
+        <div class="flex items-center mt-2">
+          <% if (salesChange >= 0) { %>
+            <span class="text-green-600 text-xs font-bold flex items-center">
+              <i class="fas fa-arrow-up mr-1 text-[10px]"></i> <%= Math.abs(salesChange).toFixed(1) %>%
+            </span>
+          <% } else { %>
+            <span class="text-red-500 text-xs font-bold flex items-center">
+              <i class="fas fa-arrow-down mr-1 text-[10px]"></i> <%= Math.abs(salesChange).toFixed(1) %>%
+            </span>
+          <% } %>
+          <span class="text-gray-400 text-[10px] ml-1 font-medium italic">vs yesterday</span>
+        </div>
+      </div>
+      <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+        <i class="fas fa-calendar-day text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-gray-50">
+      <p class="text-sm">
+        <span class="font-bold text-indigo-600 text-lg"><%= todayCount %></span> 
+        <span class="text-gray-500 text-xs font-medium uppercase tracking-tighter">transactions</span>
+      </p>
+    </div>
+    <!-- Mini sparkline effect -->
+    <div class="absolute bottom-0 left-0 w-full h-1 bg-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left opacity-20"></div>
+  </div>
+
+  <!-- This Month -->
+  <div class="card p-6 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">This Month</p>
+        <h3 class="text-2xl font-black text-gray-900 mt-2">PKR <%= monthTotal.toLocaleString() %></h3>
+        <div class="flex items-center mt-2">
+          <% if (monthChange >= 0) { %>
+            <span class="text-green-600 text-xs font-bold flex items-center">
+              <i class="fas fa-arrow-up mr-1 text-[10px]"></i> <%= Math.abs(monthChange).toFixed(1) %>%
+            </span>
+          <% } else { %>
+            <span class="text-red-500 text-xs font-bold flex items-center">
+              <i class="fas fa-arrow-down mr-1 text-[10px]"></i> <%= Math.abs(monthChange).toFixed(1) %>%
+            </span>
+          <% } %>
+          <span class="text-gray-400 text-[10px] ml-1 font-medium italic">vs last month</span>
+        </div>
+      </div>
+      <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+        <i class="fas fa-chart-line text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-gray-50">
+      <p class="text-sm">
+        <span class="font-bold text-emerald-600 text-lg"><%= monthCount %></span> 
+        <span class="text-gray-500 text-xs font-medium uppercase tracking-tighter">transactions</span>
+      </p>
+    </div>
+    <div class="absolute bottom-0 left-0 w-full h-1 bg-emerald-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left opacity-20"></div>
+  </div>
+
+  <!-- Low Stock -->
+  <div class="card p-6 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Low Stock</p>
+        <h3 class="text-2xl font-black text-gray-900 mt-2"><%= lowStockProducts.length %></h3>
+        <p class="text-xs text-gray-400 mt-1 italic font-medium">Items needing attention</p>
+      </div>
+      <div class="w-12 h-12 <%= lowStockProducts.length > 0 ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-400' %> rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+        <i class="fas fa-exclamation-triangle text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-gray-50">
+      <a href="/products?sort=stock-asc" class="text-xs font-bold text-amber-600 hover:underline uppercase tracking-tighter">
+        View Inventory <i class="fas fa-chevron-right ml-1 text-[8px]"></i>
+      </a>
+    </div>
+    <div class="absolute bottom-0 left-0 w-full h-1 bg-amber-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left opacity-20"></div>
+  </div>
+
+  <!-- Customers/Static Metric -->
+  <div class="card p-6 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow group relative overflow-hidden">
+    <div class="flex items-start justify-between">
+      <div>
+        <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider">Conversion</p>
+        <h3 class="text-2xl font-black text-gray-900 mt-2">N/A</h3>
+        <p class="text-xs text-gray-400 mt-1 italic font-medium">Monthly visitor insights</p>
+      </div>
+      <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+        <i class="fas fa-users text-xl"></i>
+      </div>
+    </div>
+    <div class="mt-4 pt-4 border-t border-gray-50">
+      <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+        <div class="bg-purple-600 h-full w-[65%]"></div>
+      </div>
+      <p class="text-[10px] text-gray-500 mt-1 font-bold">Target: 65% achieved</p>
+    </div>
+    <div class="absolute bottom-0 left-0 w-full h-1 bg-purple-600 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left opacity-20"></div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+  <!-- Sales Trend -->
+  <div class="lg:col-span-2 card p-8 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all">
+    <div class="flex items-center justify-between mb-8">
+      <div>
+        <h2 class="text-xl font-extrabold text-gray-900 uppercase tracking-tight">Sales Performance</h2>
+        <p class="text-xs text-gray-500 font-medium">Revenue history for the last 7 days</p>
+      </div>
+      <div class="flex gap-2">
+         <span class="flex items-center text-[10px] font-bold text-gray-500">
+           <span class="w-2 h-2 rounded-full bg-indigo-600 mr-1.5"></span> Today
+         </span>
+      </div>
+    </div>
+    <div class="relative h-[320px]">
+      <canvas id="salesTrendsChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Top Products -->
+  <div class="card p-8 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all">
+    <h2 class="text-xl font-extrabold text-gray-900 mb-6 uppercase tracking-tight">Top Sellers</h2>
+    <div class="space-y-4">
+      <% topProducts.forEach((product, index) => { %>
+        <div class="flex items-center justify-between group p-2 hover:bg-gray-50 rounded-xl transition-colors">
+          <div class="flex items-center gap-4">
+            <div class="relative">
+               <div class="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-sm font-black text-gray-500 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                 <%= index + 1 %>
+               </div>
+            </div>
+            <div>
+              <p class="text-sm font-black text-gray-800 tracking-tight"><%= product._id %></p>
+              <p class="text-[10px] font-bold text-gray-500 uppercase tracking-tighter"><%= product.totalSold %> orders</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="text-sm font-black text-gray-900 tracking-tighter">PKR <%= product.revenue.toLocaleString() %></p>
+            <div class="w-16 bg-gray-100 h-1 rounded-full mt-1 overflow-hidden">
+               <div class="bg-indigo-600 h-full" style="width: <%= (product.totalSold / (topProducts[0].totalSold || 1)) * 100 %>%"></div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+      <% if (topProducts.length === 0) { %>
+        <div class="flex flex-col items-center justify-center py-12 text-gray-400">
+           <i class="fas fa-layer-group text-4xl mb-3 opacity-20"></i>
+           <p class="text-sm font-bold uppercase tracking-widest text-gray-300">No data available</p>
+        </div>
+      <% } %>
+    </div>
+    <a href="/admin/reports" class="block w-full text-center mt-6 py-3 border-2 border-dashed border-gray-100 text-xs font-black text-gray-400 hover:border-indigo-100 hover:text-indigo-500 transition-all rounded-xl uppercase tracking-widest">
+      Full Report
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+  <!-- Recent Activity Feed -->
+  <div class="card p-8 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all">
+     <h2 class="text-xl font-extrabold text-gray-900 mb-6 uppercase tracking-tight">Recent Activity</h2>
+     <div class="relative space-y-6 before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-0.5 before:bg-gray-100">
+       <% recentSales.map(sale => { %>
+         <div class="relative flex items-start gap-5 group">
+           <div class="z-10 w-9 h-9 rounded-full bg-white border-2 border-indigo-600 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fas fa-shopping-bag text-xs"></i>
+           </div>
+           <div class="flex-1 -mt-0.5">
+             <div class="flex justify-between items-start">
+               <p class="text-xs font-black text-gray-800">New Sale #<%= sale._id.toString().slice(-6).toUpperCase() %></p>
+               <span class="text-[9px] font-bold text-gray-400 uppercase"><%= new Date(sale.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+             </div>
+             <p class="text-[11px] text-gray-500 mt-0.5 font-medium"><%= sale.items.length %> items • PKR <%= sale.total.toLocaleString() %></p>
+             <div class="flex items-center gap-1.5 mt-1.5">
+                <span class="px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded text-[9px] font-black uppercase tracking-tighter"><%= sale.paymentMethod %></span>
+                <span class="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded text-[9px] font-black uppercase tracking-tighter"><%= sale.cashierName %></span>
+             </div>
+           </div>
+         </div>
+       <% }) %>
+       <% if (recentSales.length === 0) { %>
+         <p class="text-center text-gray-300 py-8 italic font-bold text-sm tracking-widest uppercase">No recent activity</p>
+       <% } %>
+     </div>
+  </div>
+
+  <!-- Low Stock Table -->
+  <div class="lg:col-span-2 card p-8 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all">
+     <div class="flex items-center justify-between mb-8">
+        <div>
+          <h2 class="text-xl font-extrabold text-gray-900 uppercase tracking-tight">Critical Inventory</h2>
+          <p class="text-xs text-gray-500 font-medium">Items running low and require attention</p>
+        </div>
+        <a href="/products" class="text-xs font-black text-indigo-600 hover:underline uppercase tracking-widest">Inventory List</a>
+     </div>
+     <div class="overflow-x-auto">
+       <table class="w-full">
+         <thead>
+           <tr class="text-left border-b border-gray-50">
+             <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Product</th>
+             <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Category</th>
+             <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Stock Level</th>
+             <th class="pb-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
+           </tr>
+         </thead>
+         <tbody class="divide-y divide-gray-50">
+           <% lowStockProducts.map(p => { %>
+             <tr class="group hover:bg-gray-50 transition-colors">
+               <td class="py-4">
+                 <p class="text-sm font-extrabold text-gray-800"><%= p.name %></p>
+               </td>
+               <td class="py-4">
+                 <span class="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-tighter"><%= p.category || 'N/A' %></span>
+               </td>
+               <td class="py-4">
+                 <div class="flex items-center gap-3">
+                    <span class="text-xs font-black <%= p.stock < 3 ? 'text-red-500' : 'text-amber-500' %>"><%= p.stock %> left</span>
+                    <div class="w-24 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                       <div class="<%= p.stock < 3 ? 'bg-red-500' : 'bg-amber-500' %> h-full" style="width: <%= (p.stock / 10) * 100 %>%"></div>
+                    </div>
+                 </div>
+               </td>
+               <td class="py-4 text-right">
+                 <a href="/products/edit/<%= p._id %>" class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                 </a>
+               </td>
+             </tr>
+           <% }) %>
+           <% if (lowStockProducts.length === 0) { %>
+             <tr>
+               <td colspan="4" class="py-8 text-center text-gray-300 italic font-bold text-sm tracking-widest uppercase">Stock levels optimal</td>
+             </tr>
+           <% } %>
+         </tbody>
+       </table>
+     </div>
+  </div>
+</div>
+
+<!-- Floating Action Button (Mobile) -->
+<div class="fixed bottom-8 right-8 lg:hidden z-50">
+  <button id="fabBtn" class="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center text-xl active:scale-90 transition-transform">
+    <i class="fas fa-plus"></i>
+  </button>
+  <div id="fabMenu" class="absolute bottom-16 right-0 space-y-3 hidden transition-opacity">
+    <a href="/pos" class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-100">
+      <span class="text-[10px] font-black text-gray-600 uppercase tracking-widest">New Sale</span>
+      <div class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center"><i class="fas fa-cash-register text-xs"></i></div>
+    </a>
+    <a href="/products/add" class="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-lg border border-gray-100">
+      <span class="text-[10px] font-black text-gray-600 uppercase tracking-widest">Add Product</span>
+      <div class="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center"><i class="fas fa-box text-xs"></i></div>
+    </a>
+  </div>
+</div>
+
+<script>
+  // Sales Trends Area Chart 
+  const ctx = document.getElementById('salesTrendsChart').getContext('2d');
+  
+  // Create gradient
+  const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+  gradient.addColorStop(0, 'rgba(79, 70, 229, 0.4)');
+  gradient.addColorStop(1, 'rgba(79, 70, 229, 0.05)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: <%- JSON.stringify(chartData.map(d => d.date)) %>,
+      datasets: [{
+        label: 'Revenue (PKR)',
+        data: <%- JSON.stringify(chartData.map(d => d.total)) %>,
+        borderColor: '#4f46e5',
+        borderWidth: 4,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#4f46e5',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 8,
+        fill: true,
+        backgroundColor: gradient,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        intersect: false,
+        mode: 'index',
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1f2937',
+          titleFont: { size: 12, weight: 'bold' },
+          bodyFont: { size: 14, weight: '900' },
+          padding: 12,
+          cornerRadius: 12,
+          displayColors: false,
+          callbacks: {
+            label: function(context) {
+              return 'PKR ' + context.parsed.y.toLocaleString();
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            display: true,
+            color: '#f3f4f6',
+            drawBorder: false
+          },
+          ticks: {
+            font: { weight: 'bold', size: 10 },
+            color: '#9ca3af',
+            callback: function(value) {
+              return 'PKR ' + (value >= 1000 ? (value / 1000) + 'k' : value);
+            }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            font: { weight: 'bold', size: 10 },
+            color: '#9ca3af'
+          }
+        }
+      }
+    }
+  });
+
+  // FAB Menu Toggle
+  const fabBtn = document.getElementById('fabBtn');
+  const fabMenu = document.getElementById('fabMenu');
+  if(fabBtn) {
+    fabBtn.addEventListener('click', () => {
+      fabMenu.classList.toggle('hidden');
+    });
+  }
+
+  // Animation Counters (Simple manual version)
+  document.addEventListener('DOMContentLoaded', () => {
+     // Optional: animate text values if needed, but standard rendering is fine for now
+  });
+</script>
+
+<%- include('../layouts/footer') %>

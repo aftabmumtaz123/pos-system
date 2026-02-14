@@ -1,0 +1,255 @@
+<% 
+  const title = 'Branding & Receipt Settings';
+  const currentPage = 'settings';
+%>
+<%- include('../../layouts/header', { user, title, currentPage }) %>
+
+<div class="mb-6">
+    <h1 class="text-3xl font-black text-gray-900 tracking-tighter">Branding & Receipt</h1>
+    <p class="text-gray-500">Customize how your shop and receipts appear to customers</p>
+</div>
+
+<% if (query.success) { %>
+    <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-6 rounded-r-xl">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-check-circle text-emerald-500"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-bold text-emerald-800"><%= query.success %></p>
+            </div>
+        </div>
+    </div>
+<% } %>
+
+<% if (query.error) { %>
+    <div class="bg-rose-50 border-l-4 border-rose-500 p-4 mb-6 rounded-r-xl">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-rose-500"></i>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-bold text-rose-800"><%= query.error %></p>
+            </div>
+        </div>
+    </div>
+<% } %>
+
+<form action="/admin/settings/branding" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-20">
+    <!-- Left Column: Business & Receipt Details -->
+    <div class="lg:col-span-2 space-y-8">
+        <!-- 1. General Business Information -->
+        <div class="card">
+            <h2 class="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <i class="fas fa-building text-indigo-600"></i>
+                General Business Information
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="form-group">
+                    <label class="form-label">Site / Business Name <span class="text-rose-500">*</span></label>
+                    <input type="text" name="businessName" value="<%= settings.businessName %>" class="form-control" placeholder="e.g. My Awesome Shop" required>
+                    <p class="text-[10px] text-gray-400 mt-1">Appears in browser tab, receipts, and headers.</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Short Brand Name</label>
+                    <input type="text" name="brandName" value="<%= settings.brandName %>" class="form-control" maxlength="20" placeholder="e.g. Awesome Shop">
+                    <p class="text-[10px] text-gray-400 mt-1">Used in tight spaces (sidebar). Max 20 chars.</p>
+                </div>
+                <div class="form-group md:col-span-2">
+                    <label class="form-label">Tagline / Slogan</label>
+                    <input type="text" name="tagline" value="<%= settings.tagline %>" class="form-control" placeholder="e.g. Fashion • Snacks • Everyday Value">
+                    <p class="text-[10px] text-gray-400 mt-1">Appears under the business name on receipts and login page.</p>
+                </div>
+                <div class="form-group md:col-span-2">
+                    <label class="form-label">Business Address</label>
+                    <textarea name="address" class="form-control" rows="2" placeholder="Street, City, Zip..."><%= settings.address %></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Contact Phone</label>
+                    <input type="text" name="phone" value="<%= settings.phone %>" class="form-control" placeholder="+92 300 1234567">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">WhatsApp Number</label>
+                    <input type="text" name="whatsapp" value="<%= settings.whatsapp %>" class="form-control" placeholder="+92 300 7654321">
+                    <p class="text-[10px] text-gray-400 mt-1">Used for the WhatsApp QR code.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Appearance & Colors -->
+        <div class="card">
+            <h2 class="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <i class="fas fa-palette text-indigo-600"></i>
+                Appearance & Theme
+            </h2>
+            
+            <div class="space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="form-group">
+                        <label class="form-label">Primary Color</label>
+                        <div class="flex gap-4">
+                            <input type="color" name="primaryColor" value="<%= settings.primaryColor %>" class="w-12 h-12 border-none rounded-lg cursor-pointer bg-transparent">
+                            <input type="text" value="<%= settings.primaryColor %>" class="form-control flex-1 font-mono text-sm uppercase" readonly>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-2">Main accent for buttons, headers, and totals.</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Secondary Color</label>
+                        <div class="flex gap-4">
+                            <input type="color" name="secondaryColor" value="<%= settings.secondaryColor %>" class="w-12 h-12 border-none rounded-lg cursor-pointer bg-transparent">
+                            <input type="text" value="<%= settings.secondaryColor %>" class="form-control flex-1 font-mono text-sm uppercase" readonly>
+                        </div>
+                        <p class="text-[10px] text-gray-400 mt-2">Used for secondary buttons and accents.</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Accent Success (Paid/Ok)</label>
+                        <div class="flex gap-4">
+                            <input type="color" name="accentSuccessColor" value="<%= settings.accentSuccessColor %>" class="w-12 h-12 border-none rounded-lg cursor-pointer bg-transparent">
+                            <input type="text" value="<%= settings.accentSuccessColor %>" class="form-control flex-1 font-mono text-sm uppercase" readonly>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Accent Danger (Warning/Stock)</label>
+                        <div class="flex gap-4">
+                            <input type="color" name="accentWarningColor" value="<%= settings.accentWarningColor %>" class="w-12 h-12 border-none rounded-lg cursor-pointer bg-transparent">
+                            <input type="text" value="<%= settings.accentWarningColor %>" class="form-control flex-1 font-mono text-sm uppercase" readonly>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group border-t pt-6">
+                    <label class="form-label mb-4 block">Background Style</label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="backgroundStyle" value="light" class="peer hidden" <%= settings.backgroundStyle === 'light' ? 'checked' : '' %>>
+                            <div class="text-center p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all">
+                                <i class="fas fa-sun mb-2 text-xl"></i>
+                                <span class="block text-xs font-black uppercase">Light</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="backgroundStyle" value="dark" class="peer hidden" <%= settings.backgroundStyle === 'dark' ? 'checked' : '' %>>
+                            <div class="text-center p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all">
+                                <i class="fas fa-moon mb-2 text-xl"></i>
+                                <span class="block text-xs font-black uppercase">Dark</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="backgroundStyle" value="auto" class="peer hidden" <%= settings.backgroundStyle === 'auto' ? 'checked' : '' %>>
+                            <div class="text-center p-4 border-2 rounded-xl peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all">
+                                <i class="fas fa-desktop mb-2 text-xl"></i>
+                                <span class="block text-xs font-black uppercase">Auto</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Receipt Customization -->
+        <div class="card">
+            <h2 class="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <i class="fas fa-receipt text-indigo-600"></i>
+                Receipt Customization
+            </h2>
+            
+            <div class="space-y-6">
+                <div class="form-group">
+                    <label class="form-label">Receipt Header Title</label>
+                    <input type="text" name="receiptTitle" value="<%= settings.receiptTitle %>" class="form-control" placeholder="e.g. Point of Sale Receipt">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                        <input type="checkbox" name="showAddressOnReceipt" id="showAddressOnReceipt" class="w-5 h-5 accent-indigo-600" <%= settings.showAddressOnReceipt ? 'checked' : '' %>>
+                        <label for="showAddressOnReceipt" class="text-sm font-bold text-gray-700">Show Business Address</label>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                        <input type="checkbox" name="showChange" id="showChange" class="w-5 h-5 accent-indigo-600" <%= settings.showChange ? 'checked' : '' %>>
+                        <label for="showChange" class="text-sm font-bold text-gray-700">Show Change Returned</label>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                        <input type="checkbox" name="showCashier" id="showCashier" class="w-5 h-5 accent-indigo-600" <%= settings.showCashier ? 'checked' : '' %>>
+                        <label for="showCashier" class="text-sm font-bold text-gray-700">Show Cashier Name</label>
+                    </div>
+                    <div class="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                        <input type="checkbox" name="showQRCode" id="showQRCode" class="w-5 h-5 accent-indigo-600" <%= settings.showQRCode ? 'checked' : '' %>>
+                        <label for="showQRCode" class="text-sm font-bold text-gray-700">Show QR Code</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Thank You Message</label>
+                    <textarea name="thankYouMessage" class="form-control" rows="2"><%= settings.thankYouMessage %></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Visual Assets -->
+    <div class="space-y-8">
+        <div class="card sticky top-24">
+            <h2 class="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
+                <i class="fas fa-images text-indigo-600"></i>
+                Visual Assets
+            </h2>
+            
+            <div class="space-y-8">
+                <div>
+                    <label class="form-label mb-3 block">Main Business Logo</label>
+                    <div class="relative group">
+                        <div class="w-full h-32 bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 flex items-center justify-center p-4">
+                            <img id="logoPreview" src="<%= settings.logo %>" class="max-w-full max-h-full object-contain">
+                        </div>
+                        <input type="file" name="logo" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewImage(this, 'logoPreview')">
+                        <div class="absolute bottom-2 right-2 bg-white px-2 py-1 rounded text-[10px] font-black uppercase text-indigo-600">Change</div>
+                    </div>
+                    <p class="text-[9px] text-gray-400 mt-2 text-center">Header & Receipts. PNG recommended.</p>
+                </div>
+
+                <div class="pt-6 border-t border-gray-100">
+                    <label class="form-label mb-3 block">Browser Favicon</label>
+                    <div class="relative group w-20 mx-auto">
+                        <div class="w-20 h-20 bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 flex items-center justify-center p-3">
+                            <img id="faviconPreview" src="<%= settings.favicon %>" class="w-10 h-10 object-contain">
+                        </div>
+                        <input type="file" name="favicon" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewImage(this, 'faviconPreview')">
+                    </div>
+                    <p class="text-[9px] text-gray-400 mt-2 text-center">Browser Tab. 64x64px.</p>
+                </div>
+
+                <div class="pt-6 border-t border-gray-100">
+                    <label class="form-label mb-3 block">Login Background</label>
+                    <div class="relative group">
+                        <div class="w-full h-40 bg-gray-100 rounded-2xl overflow-hidden border-2 border-dashed border-gray-200 p-2">
+                            <img id="loginBgPreview" src="<%= settings.loginBackground || '/images/default-login-bg.jpg' %>" class="w-full h-full object-cover rounded-xl">
+                        </div>
+                        <input type="file" name="loginBackground" class="absolute inset-0 opacity-0 cursor-pointer" onchange="previewImage(this, 'loginBgPreview')">
+                        <div class="absolute bottom-4 right-4 bg-white px-2 py-1 rounded text-[10px] font-black uppercase text-indigo-600">Change</div>
+                    </div>
+                    <p class="text-[9px] text-gray-400 mt-2 text-center">Login screen backdrop image.</p>
+                </div>
+
+                <button type="submit" class="w-full btn btn-primary py-4 text-sm justify-center shadow-xl shadow-indigo-100 mt-8">
+                    <i class="fas fa-save mr-2"></i>
+                    Save All Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    function previewImage(input, previewId) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById(previewId).src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+</script>
+
+<%- include('../../layouts/footer') %>

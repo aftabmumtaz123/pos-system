@@ -1,0 +1,145 @@
+<% 
+  const currentPage = 'products';
+  const title = product ? 'Edit Product - POS System' : 'Add Product - POS System';
+  const isEdit = !!product;
+%>
+<%- include('../../layouts/header', { user, currentPage, title }) %>
+
+<div class="max-w-2xl mx-auto">
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900"><%= isEdit ? 'Edit' : 'Add' %> Product</h1>
+    <p class="text-gray-600 mt-2"><%= isEdit ? 'Update product details' : 'Add a new item to inventory' %></p>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+    <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+      <p class="text-red-700"><i class="fas fa-exclamation-circle mr-2"></i><%= error %></p>
+    </div>
+  <% } %>
+
+  <div class="card">
+    <form action="<%= isEdit ? '/products/edit/' + product._id : '/products/add' %>" method="POST" enctype="multipart/form-data">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="form-group">
+          <label class="form-label">Product Name *</label>
+          <input 
+            type="text" 
+            name="name" 
+            class="form-control" 
+            value="<%= isEdit ? product.name : '' %>"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <input 
+            type="text" 
+            name="category" 
+            class="form-control" 
+            value="<%= isEdit ? product.category : '' %>"
+            placeholder="e.g., Electronics, Snacks"
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Price (PKR) *</label>
+          <input 
+            type="number" 
+            name="price" 
+            class="form-control" 
+            step="0.01"
+            min="0"
+            value="<%= isEdit ? product.price : '' %>"
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Stock Quantity *</label>
+          <input 
+            type="number" 
+            name="stock" 
+            class="form-control" 
+            min="0"
+            value="<%= isEdit ? product.stock : '' %>"
+            required
+          >
+        </div>
+
+        <div class="col-span-full">
+          <label class="form-label">Description</label>
+          <textarea 
+            name="description" 
+            class="form-control" 
+            rows="3"
+          ><%= isEdit ? product.description : '' %></textarea>
+        </div>
+
+        <div class="col-span-full">
+          <label class="form-label">Product Image</label>
+          <div class="flex items-start gap-4">
+            <% if (isEdit && product.image) { %>
+              <div class="w-32 h-32 flex-shrink-0">
+                <img 
+                  src="<%= product.image %>" 
+                  alt="Current" 
+                  class="w-full h-full object-cover rounded-lg border"
+                >
+                <p class="text-xs text-center text-gray-500 mt-1">Current Image</p>
+              </div>
+            <% } %>
+            <div class="flex-1">
+              <input 
+                type="file" 
+                name="image" 
+                class="form-control" 
+                accept="image/*"
+                <%= !isEdit ? 'required' : '' %>
+                onchange="previewImage(this)"
+              >
+              <p class="text-xs text-gray-500 mt-1">Allowed formats: JPG, PNG, GIF. Max size: 5MB</p>
+              <div id="imagePreview" class="mt-2 hidden">
+                <img src="" alt="Preview" class="w-32 h-32 object-cover rounded-lg border">
+                <p class="text-xs text-gray-500 mt-1">New Image Preview</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          <%= isEdit ? 'Update' : 'Save' %> Product
+        </button>
+        <a href="/products" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i>
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const img = preview.querySelector('img');
+    
+    if (input.files && input.files[0]) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        img.src = e.target.result;
+        preview.classList.remove('hidden');
+      }
+      
+      reader.readAsDataURL(input.files[0]);
+    } else {
+      preview.classList.add('hidden');
+    }
+  }
+</script>
+
+<%- include('../../layouts/footer') %>

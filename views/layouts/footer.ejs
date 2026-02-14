@@ -1,0 +1,42 @@
+  </main>
+
+  <!-- Toastify JS -->
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  
+  <!-- Toast Helper -->
+  <script src="/js/toast.js"></script>
+
+  <!-- Sidebar Toggle Script -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    sidebarToggle?.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+      sidebarOverlay.classList.toggle('hidden');
+    });
+
+    sidebarOverlay?.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+      sidebarOverlay.classList.add('hidden');
+    });
+  </script>
+
+  <!-- Show toasts from query params -->
+  <% if (typeof query !== 'undefined') { %>
+    <% if (query.success) { %>
+      <div data-success-message="<%= query.success %>"></div>
+    <% } %>
+    <% if (query.error) { %>
+      <div data-error-message="<%= query.error %>"></div>
+    <% } %>
+    <% if (query.warning) { %>
+      <div data-warning-message="<%= query.warning %>"></div>
+    <% } %>
+    <% if (query.info) { %>
+      <div data-info-message="<%= query.info %>"></div>
+    <% } %>
+  <% } %>
+</body>
+</html>

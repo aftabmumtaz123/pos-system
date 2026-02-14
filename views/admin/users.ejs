@@ -1,0 +1,290 @@
+<% 
+  const currentPage = 'users';
+  const title = 'Team Management - POS System';
+%>
+<%- include('../layouts/header', { user, currentPage, title }) %>
+
+<!-- Header and Summary Stats -->
+<div class="mb-8 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+  <div>
+    <h1 class="text-3xl font-black text-gray-900 tracking-tight">Staff & Team</h1>
+    <p class="text-gray-500 font-medium mt-1">Manage system permissions and access levels.</p>
+  </div>
+  <a href="/users/add" class="btn bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 px-6 py-3 transition-all transform hover:-translate-y-1 rounded-xl">
+    <i class="fas fa-user-plus mr-2"></i> Add Team Member
+  </a>
+</div>
+
+<!-- Stats Dashboard -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+  <div class="card p-4 bg-white border border-gray-100 flex items-center gap-4">
+    <div class="w-10 h-10 rounded-xl bg-gray-50 text-gray-400 flex items-center justify-center"><i class="fas fa-users"></i></div>
+    <div>
+      <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Staff</p>
+      <p class="text-lg font-black text-gray-900"><%= stats.total %></p>
+    </div>
+  </div>
+  <div class="card p-4 bg-white border border-gray-100 flex items-center gap-4">
+    <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center"><i class="fas fa-user-shield"></i></div>
+    <div>
+      <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Super Admins</p>
+      <p class="text-lg font-black text-red-600"><%= stats.admins %></p>
+    </div>
+  </div>
+  <div class="card p-4 bg-white border border-gray-100 flex items-center gap-4">
+    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fas fa-cash-register"></i></div>
+    <div>
+      <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cashiers</p>
+      <p class="text-lg font-black text-indigo-600"><%= stats.cashiers %></p>
+    </div>
+  </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-8 p-6 bg-white border border-gray-100 shadow-sm rounded-2xl">
+  <form method="GET" action="/users" id="filterForm" class="flex flex-col md:flex-row gap-4">
+    <div class="flex-1 relative">
+      <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+      <input 
+        type="text" 
+        name="search" 
+        placeholder="Search by name or email..." 
+        class="form-control pl-12 pr-10 py-3 search-field focus:ring-4 focus:ring-indigo-50"
+        value="<%= search %>"
+        autocomplete="off"
+      >
+    </div>
+    <div class="w-full md:w-48">
+      <select name="role" class="form-control py-3 font-semibold text-gray-700 cursor-pointer" onchange="this.form.submit()">
+        <option value="">Role: All</option>
+        <option value="super_admin" <%= role === 'super_admin' ? 'selected' : '' %>>Super Admin</option>
+        <option value="cashier" <%= role === 'cashier' ? 'selected' : '' %>>Cashier</option>
+      </select>
+    </div>
+    <div class="w-full md:w-48">
+      <select name="sort" class="form-control py-3 font-semibold text-gray-700 cursor-pointer" onchange="this.form.submit()">
+        <option value="">Sort: Newest</option>
+        <option value="username-asc" <%= sort === 'username-asc' ? 'selected' : '' %>>Name: A-Z</option>
+        <option value="username-desc" <%= sort === 'username-desc' ? 'selected' : '' %>>Name: Z-A</option>
+        <option value="role" <%= sort === 'role' ? 'selected' : '' %>>Role</option>
+        <option value="oldest" <%= sort === 'oldest' ? 'selected' : '' %>>Date Joined</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+<!-- Users Table -->
+<div class="card overflow-hidden p-0 border-none shadow-xl bg-white rounded-2xl">
+  <!-- Desktop View -->
+  <div class="hidden md:block overflow-x-auto">
+    <table class="w-full">
+      <thead>
+        <tr class="bg-gray-50 border-b border-gray-100">
+          <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest w-64">User Profile</th>
+          <th class="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Email Address</th>
+          <th class="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Role</th>
+          <th class="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
+          <th class="px-6 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Joined</th>
+          <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        <% users.forEach((u, index) => { 
+           const avatarColors = ['blue', 'purple', 'amber', 'rose'];
+           const colorClass = `user-avatar-${avatarColors[index % 4]}`;
+           const initials = u.username.slice(0, 2).toUpperCase();
+           const isSelf = u._id.toString() === user._id.toString();
+        %>
+          <tr class="product-row group transition-all hover:bg-indigo-50/30 cursor-pointer" onclick="window.location.href='/users/<%= u._id %>'">
+            <td class="px-8 py-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full <%= colorClass %> flex items-center justify-center font-black text-xs shadow-sm shadow-indigo-100 group-hover:scale-110 transition-transform">
+                  <%= initials %>
+                </div>
+                <div>
+                  <p class="text-sm font-black text-gray-900 tracking-tight flex items-center gap-2">
+                    <%= u.username %>
+                    <% if (isSelf) { %>
+                      <span class="protected-badge">Me</span>
+                    <% } %>
+                  </p>
+                  <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">ID: #<%= u._id.toString().slice(-6).toUpperCase() %></span>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-sm font-semibold text-gray-600"><%= u.email %></p>
+            </td>
+            <td class="px-6 py-4">
+              <% if (u.role === 'super_admin') { %>
+                <span class="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-tighter border border-red-100">
+                  <i class="fas fa-shield-alt mr-1"></i> Admin
+                </span>
+              <% } else { %>
+                <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase tracking-tighter border border-indigo-100">
+                  <i class="fas fa-user mr-1"></i> Cashier
+                </span>
+              <% } %>
+            </td>
+            <td class="px-6 py-4 text-center">
+               <% if (u.isActive !== false) { %>
+                 <span class="inline-flex items-center text-[10px] font-black text-emerald-600 uppercase">
+                    <span class="status-dot status-dot-active"></span> Active
+                 </span>
+               <% } else { %>
+                 <span class="inline-flex items-center text-[10px] font-black text-red-600 uppercase">
+                    <span class="status-dot bg-red-500"></span> Inactive
+                 </span>
+               <% } %>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-xs font-bold text-gray-500"><%= new Date(u.createdAt).toLocaleDateString('en-PK', { day: '2-digit', month: 'short', year: 'numeric' }) %></p>
+            </td>
+            <td class="px-8 py-4 text-right" onclick="event.stopPropagation()">
+              <div class="flex items-center justify-end gap-2">
+                <button type="button" onclick="openEditModal('<%= u._id %>', '<%= u.username %>', '<%= u.email %>', '<%= u.role %>')" class="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-indigo-600 hover:text-white transition-all action-icon shadow-sm">
+                  <i class="fas fa-edit text-xs"></i>
+                </button>
+                <% if (!isSelf) { %>
+                  <a href="/users/delete/<%= u._id %>" onclick="return confirm('Permanently remove this team member?')" class="w-9 h-9 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:bg-red-600 hover:text-white transition-all action-icon shadow-sm">
+                    <i class="fas fa-trash text-xs"></i>
+                  </a>
+                <% } else { %>
+                  <div class="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 cursor-not-allowed opacity-50" title="Protected account">
+                    <i class="fas fa-lock text-xs"></i>
+                  </div>
+                <% } %>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile View (Cards) -->
+  <div class="md:hidden divide-y divide-gray-50">
+     <% users.forEach((u, index) => { 
+        const avatarColors = ['blue', 'purple', 'amber', 'rose'];
+        const colorClass = `user-avatar-${avatarColors[index % 4]}`;
+        const initials = u.username.slice(0, 2).toUpperCase();
+        const isSelf = u._id.toString() === user._id.toString();
+     %>
+       <div class="p-5 flex gap-4 active:bg-gray-50 transition-colors cursor-pointer" onclick="window.location.href='/users/<%= u._id %>'">
+          <div class="w-12 h-12 rounded-2xl <%= colorClass %> flex items-center justify-center font-black text-sm shadow-sm border-2 border-white">
+             <%= initials %>
+          </div>
+          <div class="flex-1">
+             <div class="flex justify-between items-start">
+                <div>
+                   <p class="text-sm font-black text-gray-900 tracking-tight flex items-center gap-1.5">
+                     <%= u.username %>
+                     <% if (isSelf) { %> <span class="protected-badge scale-90">Me</span> <% } %>
+                   </p>
+                   <p class="text-[10px] font-bold text-gray-400"><%= u.email %></p>
+                </div>
+                <% if (u.role === 'super_admin') { %>
+                  <span class="text-[9px] font-black text-red-500 uppercase">Admin</span>
+                <% } else { %>
+                  <span class="text-[9px] font-black text-indigo-500 uppercase">Cashier</span>
+                <% } %>
+             </div>
+             <div class="flex justify-between items-center mt-3">
+                <% if (u.isActive !== false) { %>
+                  <span class="text-[9px] font-black text-emerald-600 uppercase flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Active</span>
+                <% } else { %>
+                  <span class="text-[9px] font-black text-red-600 uppercase flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span> Inactive</span>
+                <% } %>
+                <span class="text-[9px] font-bold text-gray-400 italic">Joined <%= new Date(u.createdAt).toLocaleDateString() %></span>
+             </div>
+          </div>
+       </div>
+     <% }) %>
+  </div>
+
+  <% if (users.length === 0) { %>
+    <div class="py-24 text-center bg-gray-50/30">
+        <div class="max-w-xs mx-auto">
+           <div class="w-20 h-20 bg-white shadow-xl shadow-gray-200/50 rounded-3xl flex items-center justify-center mb-8 mx-auto transform -rotate-12 border border-gray-100">
+              <i class="fas fa-user-slash text-4xl text-indigo-200"></i>
+           </div>
+           <h3 class="text-2xl font-black text-gray-900 tracking-tight">No team members</h3>
+           <p class="text-gray-500 font-bold mt-2 text-sm px-4">We couldn't find any staff matching your search criteria.</p>
+           <a href="/register" class="mt-8 btn bg-indigo-600 text-white px-10 py-4 rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px]">Add Staff Member</a>
+        </div>
+    </div>
+  <% } %>
+</div>
+
+<!-- Edit User Modal -->
+<div id="editUserModal" class="fixed inset-0 z-50 hidden bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-95 opacity-0 duration-300" id="modalContainer">
+    <div class="p-6 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+      <h3 class="text-xl font-black text-gray-900 tracking-tight">Edit Team Member</h3>
+      <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="editUserForm" method="POST" action="" class="p-6 space-y-5">
+      <div>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Username</label>
+        <input type="text" name="username" id="editUsername" required class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50">
+      </div>
+      <div>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label>
+        <input type="email" name="email" id="editEmail" required class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50">
+      </div>
+      <div>
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Privilege Role</label>
+        <select name="role" id="editRole" class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50 cursor-pointer">
+          <option value="super_admin">Super Admin</option>
+          <option value="cashier">Cashier</option>
+        </select>
+      </div>
+      <div class="pt-2">
+        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">New Password (Optional)</label>
+        <input type="password" name="password" placeholder="Leave blank to keep current" class="form-control py-3 font-bold border-gray-100 focus:ring-4 focus:ring-indigo-50">
+      </div>
+      <div class="flex gap-3 pt-4">
+        <button type="button" onclick="closeEditModal()" class="flex-1 px-6 py-4 rounded-2xl bg-gray-50 text-gray-600 font-black uppercase tracking-widest text-[10px] hover:bg-gray-100 transition-all">Cancel</button>
+        <button type="submit" class="flex-1 px-6 py-4 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function openEditModal(id, username, email, role) {
+    const modal = document.getElementById('editUserModal');
+    const container = document.getElementById('modalContainer');
+    const form = document.getElementById('editUserForm');
+    
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role;
+    form.action = `/users/edit/${id}`;
+    
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      container.classList.remove('scale-95', 'opacity-0');
+      container.classList.add('scale-100', 'opacity-100');
+    }, 10);
+  }
+
+  function closeEditModal() {
+    const modal = document.getElementById('editUserModal');
+    const container = document.getElementById('modalContainer');
+    
+    container.classList.remove('scale-100', 'opacity-100');
+    container.classList.add('scale-95', 'opacity-0');
+    
+    setTimeout(() => {
+      modal.classList.add('hidden');
+    }, 300);
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('editUserModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEditModal();
+  });
+</script>
+
+<%- include('../layouts/footer') %>

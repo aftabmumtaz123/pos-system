@@ -1,0 +1,384 @@
+<% 
+  const currentPage = 'my-sales';
+  const title = 'My Sales Performance';
+%>
+<%- include('../layouts/header', { user, currentPage, title }) %>
+
+<style>
+  .sale-row { transition: all 0.2s ease; cursor: pointer; }
+  .sale-row:hover { background-color: #f8fafc; transform: translateX(4px); }
+  .period-btn { 
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    border: 1px solid #e2e8f0;
+    display: inline-block;
+  }
+  .period-btn.active { 
+    background-color: #4f46e5;
+    border-color: #4f46e5;
+    color: #ffffff;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.1), 0 4px 6px -2px rgba(79, 70, 229, 0.05);
+  }
+  .period-btn:not(.active) { 
+    background-color: #ffffff;
+    border-color: #e2e8f0;
+    color: #4b5563;
+  }
+  .period-btn:not(.active):hover {
+    border-color: #a5b4fc;
+    color: #4f46e5;
+  }
+  
+  .badge-payment { font-size: 10px; font-weight: 900; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; }
+  .badge-cash { background: #ecfdf5; color: #059669; }
+  .badge-card { background: #eff6ff; color: #2563eb; }
+  .badge-wallet { background: #f0fdfa; color: #0d9488; }
+</style>
+
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+  <div>
+    <h1 class="text-3xl font-black text-gray-900 tracking-tighter">My Sales</h1>
+    <p class="text-gray-500">Track your individual performance and history</p>
+  </div>
+  
+  <!-- Period Selector -->
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="/pos/my-sales?period=today" class="period-btn <%= filters.period === 'today' ? 'active' : '' %>">Today</a>
+    <a href="/pos/my-sales?period=week" class="period-btn <%= filters.period === 'week' ? 'active' : '' %>">7 Days</a>
+    <a href="/pos/my-sales?period=month" class="period-btn <%= filters.period === 'month' ? 'active' : '' %>">30 Days</a>
+    
+    <div class="h-8 w-px bg-gray-200 mx-2 hidden md:block"></div>
+    
+    <form action="/pos/my-sales" method="GET" class="flex items-center gap-2">
+      <input type="date" name="startDate" value="<%= filters.startDate %>" class="form-control text-xs py-2 px-3 w-40">
+      <span class="text-gray-400">to</span>
+      <input type="date" name="endDate" value="<%= filters.endDate %>" class="form-control text-xs py-2 px-3 w-40">
+      <button type="submit" class="btn btn-secondary py-2 px-3"><i class="fas fa-filter"></i></button>
+    </form>
+  </div>
+</div>
+
+<!-- Performance Summary Card -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+  <div class="md:col-span-2 card bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-8 relative overflow-hidden">
+    <div class="relative z-10">
+      <p class="text-white bg-white bg-opacity-20 inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mb-4">Performance Summary</p>
+      <div class="flex items-end gap-1">
+        <h3 class="text-5xl font-black tracking-tighter">PKR <%= totalSales.toLocaleString() %></h3>
+      </div>
+      <div class="flex gap-8 mt-6">
+        <div>
+          <p class="text-indigo-100 text-[10px] font-black uppercase tracking-widest">Transactions</p>
+          <p class="text-xl font-bold"><%= sales.length %></p>
+        </div>
+        <div>
+          <p class="text-indigo-100 text-[10px] font-black uppercase tracking-widest">Avg Sale</p>
+          <p class="text-xl font-bold">PKR <%= Math.round(avgSale).toLocaleString() %></p>
+        </div>
+        <div>
+          <p class="text-indigo-100 text-[10px] font-black uppercase tracking-widest">Total Discounts</p>
+          <p class="text-xl font-bold">PKR <%= totalDiscounts.toLocaleString() %></p>
+        </div>
+      </div>
+    </div>
+    <i class="fas fa-chart-line absolute right-[-20px] bottom-[-20px] text-[180px] text-white opacity-5"></i>
+  </div>
+  
+  <div class="card border-l-4 border-indigo-600 p-6 flex flex-col justify-center">
+    <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">Top Selling Product</p>
+    <h4 class="text-xl font-black text-gray-900 truncate"><%= highlights.topProduct %></h4>
+    <p class="text-indigo-600 font-bold text-sm mt-1"><%= highlights.topProductQty %> sold this period</p>
+  </div>
+
+  <div class="card border-l-4 border-emerald-500 p-6 flex flex-col justify-center">
+    <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-1">Most Used Payment</p>
+    <h4 class="text-xl font-black text-gray-900 uppercase"><%= highlights.topPayment %></h4>
+    <p class="text-emerald-600 font-bold text-sm mt-1"><%= highlights.topPaymentPercent %>% of transactions</p>
+  </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="card p-0 overflow-hidden">
+  <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <h2 class="text-xl font-black text-gray-900">Transaction History</h2>
+    
+    <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+      <div class="relative flex-1 md:w-64">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+        <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search Receipt # or Product..." class="form-control pl-9 py-2 text-xs w-full">
+      </div>
+      
+      <select id="paymentFilter" onchange="filterTable()" class="form-control py-2 text-xs w-full md:w-32">
+        <option value="">All Payments</option>
+        <option value="cash">Cash</option>
+        <option value="card">Card</option>
+        <option value="easypaisa">EasyPaisa</option>
+        <option value="jazzcash">JazzCash</option>
+      </select>
+
+      <button onclick="exportCSV()" class="btn btn-secondary text-xs py-2 whitespace-nowrap"><i class="fas fa-download"></i> Export CSV</button>
+    </div>
+  </div>
+  
+  <!-- Hidden Pagination Config -->
+  <div id="paginationConfig" class="hidden" data-skip="<%= pagination.skip %>" data-limit="<%= pagination.limit %>"></div>
+  
+  <div class="overflow-x-auto">
+    <table class="w-full text-left">
+      <thead class="bg-gray-50 border-b border-gray-100">
+        <tr>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Receipt #</th>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Order Details</th>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Discount</th>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Amount</th>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Payment</th>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
+          <th class="px-6 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Receipt</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% sales.forEach(sale => { %>
+          <tr class="sale-row group" onclick="viewReceipt('<%= JSON.stringify(sale) %>')">
+            <td class="px-6 py-4">
+              <span class="font-mono text-sm font-bold text-gray-900">#<%= sale._id.toString().slice(-8).toUpperCase() %></span>
+            </td>
+            <td class="px-6 py-4">
+              <div class="space-y-0.5">
+                <% sale.items.forEach(item => { %>
+                  <p class="text-xs text-gray-600 font-medium leading-tight">
+                    <span class="text-gray-900"><%= item.productName %></span>
+                    <span class="text-gray-400 ml-1">× <%= item.quantity %></span>
+                  </p>
+                <% }) %>
+              </div>
+            </td>
+            <td class="px-6 py-4">
+              <% if (sale.discountAmount > 0) { %>
+                <span class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded">- PKR <%= sale.discountAmount.toLocaleString() %></span>
+              <% } else { %>
+                <span class="text-gray-300">-</span>
+              <% } %>
+            </td>
+            <td class="px-6 py-4">
+              <p class="font-black text-gray-900">PKR <%= sale.total.toLocaleString() %></p>
+            </td>
+            <td class="px-6 py-4">
+                <% 
+                    let badgeClass = 'badge-cash';
+                    if (sale.paymentMethod === 'card') badgeClass = 'badge-card';
+                    if (sale.paymentMethod === 'easypaisa' || sale.paymentMethod === 'jazzcash') badgeClass = 'badge-wallet';
+                %>
+              <span class="badge-payment <%= badgeClass %>"><%= sale.paymentMethod %></span>
+            </td>
+            <td class="px-6 py-4">
+              <p class="text-xs font-bold text-gray-900"><%= new Date(sale.createdAt).toLocaleDateString() %></p>
+              <p class="text-[10px] text-gray-400 font-black uppercase"><%= new Date(sale.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></p>
+            </td>
+            <td class="px-6 py-4 text-right">
+              <a href="/pos/receipt/<%= sale._id %>" target="_blank" class="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all inline-block">
+                <i class="fas fa-file-pdf"></i>
+              </a>
+            </td>
+          </tr>
+        <% }) %>
+        
+        <% if (sales.length === 0) { %>
+          <tr>
+            <td colspan="7" class="px-6 py-20 text-center">
+              <div class="bg-gray-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-receipt text-3xl text-gray-300"></i>
+              </div>
+              <h3 class="text-xl font-black text-gray-900 tracking-tighter">No sales recorded yet</h3>
+              <p class="text-gray-500 text-sm mt-1">Transactions for the selected period will appear here.</p>
+              <a href="/pos" class="btn btn-primary mt-6">Go to POS Dashboard</a>
+            </td>
+          </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  
+  <% if (pagination.hasMore) { %>
+    <div class="p-6 text-center border-t border-gray-100 bg-gray-50/50">
+      <button id="loadMoreBtn" onclick="loadMore()" class="btn btn-secondary px-8 font-black uppercase tracking-widest text-xs py-3">
+        <i class="fas fa-plus mr-2"></i> Load More Transactions
+      </button>
+    </div>
+  <% } %>
+</div>
+
+<!-- Receipt Preview Modal -->
+<div id="receiptModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-fade-up">
+    <div class="p-6 border-b border-dashed flex justify-between items-center bg-gray-50">
+      <h3 class="font-black text-xl text-gray-900 uppercase tracking-tighter">Receipt Review</h3>
+      <button onclick="closeReceiptModal()" class="text-gray-400 hover:text-gray-600">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+    
+    <div class="p-8 space-y-4 max-h-[60vh] overflow-y-auto">
+      <div id="modalOrderItems" class="space-y-2"></div>
+      <div class="border-t border-dashed pt-4 space-y-2">
+        <div class="flex justify-between text-sm text-gray-500">
+          <span>Subtotal</span>
+          <span id="modalSubtotal">PKR 0.00</span>
+        </div>
+        <div class="flex justify-between text-sm text-green-600" id="modalDiscountRow">
+          <span>Discount</span>
+          <span id="modalDiscount">PKR 0.00</span>
+        </div>
+        <div class="flex justify-between text-2xl font-black text-gray-900 pt-2">
+          <span>Total</span>
+          <span id="modalTotal" class="text-indigo-600">PKR 0.00</span>
+        </div>
+      </div>
+    </div>
+    <div class="p-6 bg-gray-50 flex gap-4">
+      <button onclick="closeReceiptModal()" class="flex-1 btn btn-secondary text-sm">Close</button>
+      <a id="modalPdfLink" href="#" target="_blank" class="flex-1 btn btn-primary text-sm justify-center">
+        <i class="fas fa-file-pdf"></i> Download PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function filterTable() {
+    const search = document.getElementById('tableSearch').value.toLowerCase();
+    const payment = document.getElementById('paymentFilter').value.toLowerCase();
+    const rows = document.querySelectorAll('.sale-row');
+    
+    rows.forEach(row => {
+      const text = row.innerText.toLowerCase();
+      const paymentBadge = row.querySelector('.badge-payment').innerText.toLowerCase();
+      
+      const matchesSearch = text.includes(search);
+      const matchesPayment = payment === '' || paymentBadge.includes(payment);
+      
+      row.style.display = (matchesSearch && matchesPayment) ? '' : 'none';
+    });
+  }
+
+  function loadMore() {
+    const btn = document.getElementById('loadMoreBtn');
+    const config = document.getElementById('paginationConfig');
+    let currentSkip = parseInt(config.dataset.skip);
+    const limit = parseInt(config.dataset.limit);
+    
+    currentSkip += limit;
+    config.dataset.skip = currentSkip;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Loading...';
+    
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('skip', currentSkip);
+      url.searchParams.set('limit', limit);
+      
+      fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const newRows = doc.querySelectorAll('.sale-row');
+          const hasMoreNext = doc.getElementById('loadMoreBtn') !== null;
+          
+          const tbody = document.querySelector('tbody');
+          newRows.forEach(row => tbody.appendChild(row));
+          
+          if (!hasMoreNext) {
+            btn.parentElement.remove();
+          } else {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus mr-2"></i> Load More Transactions';
+          }
+        });
+    } catch (error) {
+      console.error('Error loading more sales:', error);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-plus mr-2"></i> Try Again';
+    }
+  }
+
+  function exportCSV() {
+    const headers = ['Receipt #', 'Date', 'Time', 'Items', 'Total Amount', 'Discount', 'Payment Method'];
+    
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = [headers.join(',')];
+    
+    document.querySelectorAll('.sale-row').forEach(row => {
+      const receipt = row.querySelector('td:nth-child(1)').innerText.trim();
+      const orderDetails = row.querySelector('td:nth-child(2)').innerText.trim().replace(/\n/g, '; ');
+      const discount = row.querySelector('td:nth-child(3)').innerText.trim();
+      const total = row.querySelector('td:nth-child(4)').innerText.trim();
+      const payment = row.querySelector('td:nth-child(5)').innerText.trim();
+      const date = row.querySelector('td:nth-child(6) p:first-child').innerText.trim();
+      const time = row.querySelector('td:nth-child(6) p:last-child').innerText.trim();
+      
+      const csvRow = [receipt, date, time, orderDetails, total, discount, payment];
+      rows.push(csvRow.map(escapeCsv).join(','));
+    });
+    
+    const csvString = rows.join('\n');
+    const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    
+    if (navigator.msSaveBlob) {
+      navigator.msSaveBlob(blob, `my_sales_${new Date().toISOString().slice(0,10)}.csv`);
+    } else {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `my_sales_${new Date().toISOString().slice(0,10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+    
+    Toast.success('Exporting your sales data...');
+  }
+
+  function viewReceipt(saleJson) {
+    const sale = JSON.parse(saleJson);
+    const modalItems = document.getElementById('modalOrderItems');
+    
+    modalItems.innerHTML = sale.items.map(item => `
+      <div class="flex justify-between text-sm">
+        <span class="text-gray-600 font-medium">${item.productName} × ${item.quantity}</span>
+        <span class="text-gray-900 font-bold">PKR ${item.subtotal.toLocaleString()}</span>
+      </div>
+    `).join('');
+    
+    document.getElementById('modalSubtotal').textContent = 'PKR ' + sale.subtotal.toLocaleString();
+    if (sale.discountAmount > 0) {
+      document.getElementById('modalDiscountRow').style.display = 'flex';
+      document.getElementById('modalDiscount').textContent = '- PKR ' + sale.discountAmount.toLocaleString();
+    } else {
+      document.getElementById('modalDiscountRow').style.display = 'none';
+    }
+    document.getElementById('modalTotal').textContent = 'PKR ' + sale.total.toLocaleString();
+    document.getElementById('modalPdfLink').href = '/pos/receipt/' + sale._id;
+    
+    document.getElementById('receiptModal').classList.remove('hidden');
+  }
+
+  function closeReceiptModal() {
+    document.getElementById('receiptModal').classList.add('hidden');
+  }
+</script>
+
+<%- include('../layouts/footer') %>
