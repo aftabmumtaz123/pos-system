@@ -32,12 +32,12 @@ app.use(session({
         mongoUrl: process.env.MONGODB_URI
     }),
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 // 24 hours
+        maxAge: 1000 * 60 * 60 * 24 
     }
 }));
 
 
-// Make query params and settings available in all templates
+
 app.use(async (req, res, next) => {
     res.locals.query = req.query;
     try {
